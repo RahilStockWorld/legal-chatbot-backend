@@ -1,10 +1,9 @@
-
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
 const fs = require("fs");
 const pdfParse = require("pdf-parse");
-const { Configuration, OpenAIApi } = require("openai");
+const OpenAI = require("openai");
 require("dotenv").config();
 
 const app = express();
@@ -12,10 +11,9 @@ const upload = multer({ dest: "uploads/" });
 app.use(cors());
 app.use(express.json());
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
 let extractedText = "";
 
@@ -30,17 +28,19 @@ app.post("/api/chat", upload.single("file"), async (req, res) => {
 
   const prompt = `
 You are a legal assistant AI. Use this uploaded document to help answer the user's questions.
+
 Document Content:
-${extractedText || 'No document uploaded yet.'}
+"""${extractedText || "No document uploaded yet."}"""
+
 User Message: ${message}
 `;
 
-  const response = await openai.createChatCompletion({
+  const response = await openai.chat.completions.create({
     model: "gpt-4",
     messages: [{ role: "user", content: prompt }],
   });
 
-  res.json({ reply: response.data.choices[0].message.content });
+  res.json({ reply: response.choices[0].message.content });
 });
 
 const PORT = 5000;
